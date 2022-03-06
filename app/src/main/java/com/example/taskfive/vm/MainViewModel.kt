@@ -3,9 +3,14 @@ package com.example.taskfive.vm
 import android.util.Log
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import com.example.taskfive.Constants.Companion.ERROR
+import com.example.taskfive.Constants.Companion.POINT_CENTRAL
+import com.example.taskfive.Constants.Companion.TYPE_ATM
+import com.example.taskfive.Constants.Companion.TYPE_BANK
+import com.example.taskfive.Constants.Companion.TYPE_INFOBOX
+import com.example.taskfive.Constants.Companion.URL_BASE
 import com.example.taskfive.model.QuestApi
-import com.example.taskfive.model.AtmListItem
-import com.google.android.gms.maps.model.LatLng
+import com.example.taskfive.model.MapPoint
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.core.Observable.fromIterable
 import io.reactivex.rxjava3.core.Single
@@ -20,18 +25,16 @@ import java.lang.Math.sqrt
 import kotlin.math.pow
 
 class MainViewModel: ViewModel() {
-    private var atmList: MutableLiveData<ArrayList<AtmListItem>> = MutableLiveData()
-    private val point =  LatLng(52.425163, 31.015039)//todo to resources?
+    private var mapPointList: MutableLiveData<ArrayList<MapPoint>> = MutableLiveData()
 
-    init {
-        getData()
-    }
+    fun isListEmpty():Boolean=
+        mapPointList.value.isNullOrEmpty()
 
-    fun getAtmList() = atmList
+    fun getPointList() = mapPointList
 
-    private fun getData() {
+     fun getData() {
         val api = Retrofit.Builder()
-            .baseUrl(BASE_URL)
+            .baseUrl(URL_BASE)
             .addConverterFactory(GsonConverterFactory.create())
             .addCallAdapterFactory(RxJava3CallAdapterFactory.create())
             .build()
@@ -39,19 +42,19 @@ class MainViewModel: ViewModel() {
 
         CoroutineScope(Dispatchers.IO).launch() {
             try{
-                val list = ArrayList<AtmListItem>()//todo rename
+                val pointList = ArrayList<MapPoint>()
                 Single.zip(
                     api.getAtmList(),
                     api.getInfoboxList(),
                     api.getFilialList(),
-                    { a, i, f ->//todo rename
-                        a.forEach { it.point_type = "ATM" }//todo move to constants
-                        i.forEach { it.point_type = "Infobox" }
-                        f.forEach { it.point_type = "Bank filial" }
-                        a + i + f
+                    { atm, infobox, filial ->
+                        atm.forEach { it.pointType = TYPE_ATM }
+                        infobox.forEach { it.pointType = TYPE_INFOBOX }
+                        filial.forEach { it.pointType = TYPE_BANK }
+                        atm + infobox + filial
                     })
                     .map { it.sortedWith(
-                            compareBy {sqrt((point.latitude - it.gps_x).pow(2) + (point.longitude - it.gps_y).pow(2))   }
+                            compareBy {sqrt((POINT_CENTRAL.latitude - it.gps_x).pow(2) + (POINT_CENTRAL.longitude - it.gps_y).pow(2))   }
                         )
                     }
                     .flatMapObservable { fromIterable(it) }
@@ -59,21 +62,13 @@ class MainViewModel: ViewModel() {
                     .subscribeOn(Schedulers.io())
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribe(
-                        { value ->//todo it
-                            list.add(value)
-                            Log.e("test", value.toString())//todo delete
-                        },
-                        { error -> println("Error: $error") },
-                        { atmList.value = list }
+                        {pointList.add(it)},
+                        {Log.e(ERROR," $it")},
+                        {mapPointList.value = pointList}
                     )
-                //  withContext(Dispatchers.Main){ atmList.value = list}//todo delete
-            } catch (ex:Exception){}//todo make ex
+            } catch (ex:Exception){Log.e(ERROR," $ex")}
         }
 
-    }
-
-    companion object{
-        val BASE_URL = "https://belarusbank.by" //todo maybe to resources
     }
 }
 

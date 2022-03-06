@@ -2,7 +2,7 @@ package com.example.taskfive.model
 
 import com.google.gson.annotations.SerializedName
 
-data class AtmListItem(//todo rename
+data class MapPoint(
     @SerializedName("address",alternate= ["street"])
     val address: String,
     @SerializedName("address_type",alternate= ["street_type"])
@@ -18,5 +18,5 @@ data class AtmListItem(//todo rename
     @SerializedName("house",alternate= ["home_number"])
     val house: String
 ){
-    var point_type: String=""
+    var pointType: String=""
 }

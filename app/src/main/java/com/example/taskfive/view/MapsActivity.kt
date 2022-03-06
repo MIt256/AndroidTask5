@@ -1,8 +1,11 @@
 package com.example.taskfive.view
 
+import android.content.Context
+import android.net.ConnectivityManager
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import androidx.lifecycle.ViewModelProvider
+import com.example.taskfive.Constants.Companion.POINT_CENTRAL
 import com.example.taskfive.R
 import com.example.taskfive.vm.MainViewModel
 import com.google.android.gms.maps.CameraUpdateFactory
@@ -12,22 +15,32 @@ import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
 import com.example.taskfive.databinding.ActivityMapsBinding
-import com.example.taskfive.model.AtmListItem
+import com.example.taskfive.model.MapPoint
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.LatLngBounds
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
-    private lateinit var mMap: GoogleMap//todo maybe lazy?
-    private lateinit var binding: ActivityMapsBinding
-
+    private lateinit var mMap: GoogleMap
+    private val binding by lazy { ActivityMapsBinding.inflate(layoutInflater) }
     private val mainViewModel by lazy { ViewModelProvider(this).get(MainViewModel::class.java) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        binding = ActivityMapsBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        CoroutineScope(Dispatchers.IO).launch() {
+            if (mainViewModel.isListEmpty()) {
+                while (!checkConnectivity())
+                    delay(5000)
+                mainViewModel.getData()
+            }
+        }
 
         val mapFragment = supportFragmentManager
             .findFragmentById(R.id.map) as SupportMapFragment
@@ -37,39 +50,41 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     override fun onMapReady(googleMap: GoogleMap) {
         mMap = googleMap
 
-        mainViewModel.getAtmList().observe(this, {
+        mainViewModel.getPointList().observe(this, {
             it?.let {
-                if (::mMap.isInitialized)
-                    updateMap(it)
+                updateMap(it)
             }
         })
-        //todo fix bounds
+        //todo move to resources?
         val adelaideBounds = LatLngBounds(
-            LatLng(52.337240, 30.834963),  // SW bounds
-            LatLng(52.557113, 31.101576) // NE bounds
+            LatLng(52.374263, 30.912873),// SW bounds
+            LatLng(52.523941, 31.053927) // NE bounds
         )
         mMap.setLatLngBoundsForCameraTarget(adelaideBounds)
 
-        mMap.setMinZoomPreference(11.0f)
-        mMap.moveCamera(CameraUpdateFactory.newLatLng(LatLng(52.424169, 31.014267)))
+        mMap.setMinZoomPreference(13f)
+        mMap.moveCamera(CameraUpdateFactory.newLatLng(POINT_CENTRAL))
     }
 
-    private fun updateMap(atmList: ArrayList<AtmListItem>) {
-        for (atm in atmList) {//todo rename
+    private fun updateMap(pointList: ArrayList<MapPoint>) {
+       pointList.forEach{
             mMap.addMarker(
                 MarkerOptions()
                     .position(
-                        LatLng(
-                            atm.gps_x,
-                            atm.gps_y
-                        )
+                        LatLng(it.gps_x, it.gps_y)
                     )
-                    .title(atm.point_type)//todo fix text
-                    .snippet(atm.city_type +" "+ atm.city+", "+
-                        atm.address_type+ " "+atm.address + " "+ atm.house)
+                    .title(it.pointType)
+                    .snippet(it.city_type +" "+ it.city+", "+
+                        it.address_type+ " "+it.address + " "+ it.house)
                     .icon(BitmapDescriptorFactory.defaultMarker(265F))
             )
         }
+    }
+
+    private fun checkConnectivity():Boolean{
+        val connectManager = applicationContext.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        if (connectManager.activeNetwork != null) return true
+        return false
     }
 
 }
