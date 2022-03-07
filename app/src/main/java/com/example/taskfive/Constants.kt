@@ -16,5 +16,6 @@ class Constants {
         const val TYPE_BANK = "Отделение банка"
 
         val POINT_CENTRAL =  LatLng(52.425163, 31.015039)
+
     }
 }

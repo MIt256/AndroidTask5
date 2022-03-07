@@ -17,7 +17,6 @@ import com.google.android.gms.maps.model.MarkerOptions
 import com.example.taskfive.databinding.ActivityMapsBinding
 import com.example.taskfive.model.MapPoint
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
-import com.google.android.gms.maps.model.LatLngBounds
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -55,15 +54,8 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                 updateMap(it)
             }
         })
-        //todo move to resources?
-        val adelaideBounds = LatLngBounds(
-            LatLng(52.374263, 30.912873),// SW bounds
-            LatLng(52.523941, 31.053927) // NE bounds
-        )
-        mMap.setLatLngBoundsForCameraTarget(adelaideBounds)
 
-        mMap.setMinZoomPreference(13f)
-        mMap.moveCamera(CameraUpdateFactory.newLatLng(POINT_CENTRAL))
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(POINT_CENTRAL,13f))
     }
 
     private fun updateMap(pointList: ArrayList<MapPoint>) {

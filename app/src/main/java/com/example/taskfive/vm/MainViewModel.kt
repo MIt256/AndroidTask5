@@ -8,8 +8,6 @@ import com.example.taskfive.Constants.Companion.POINT_CENTRAL
 import com.example.taskfive.Constants.Companion.TYPE_ATM
 import com.example.taskfive.Constants.Companion.TYPE_BANK
 import com.example.taskfive.Constants.Companion.TYPE_INFOBOX
-import com.example.taskfive.Constants.Companion.URL_BASE
-import com.example.taskfive.model.QuestApi
 import com.example.taskfive.model.MapPoint
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.core.Observable.fromIterable
@@ -18,9 +16,7 @@ import io.reactivex.rxjava3.schedulers.Schedulers
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import retrofit2.Retrofit
-import retrofit2.adapter.rxjava3.RxJava3CallAdapterFactory
-import retrofit2.converter.gson.GsonConverterFactory
+import com.example.taskfive.RetrofitObj
 import java.lang.Math.sqrt
 import kotlin.math.pow
 
@@ -33,13 +29,7 @@ class MainViewModel: ViewModel() {
     fun getPointList() = mapPointList
 
      fun getData() {
-        val api = Retrofit.Builder()
-            .baseUrl(URL_BASE)
-            .addConverterFactory(GsonConverterFactory.create())
-            .addCallAdapterFactory(RxJava3CallAdapterFactory.create())
-            .build()
-            .create(QuestApi::class.java)
-
+        val api = RetrofitObj
         CoroutineScope(Dispatchers.IO).launch() {
             try{
                 val pointList = ArrayList<MapPoint>()
